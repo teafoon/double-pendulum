@@ -20,7 +20,7 @@ let dt = 0.05; // Точность симуляции
 
 // Интерфейс
 let width = 1200; // Ширина окна
-let height = 1000; // Высота окна
+let height = 900; // Высота окна
 let origin_x = width / 2; // Координата X точки подвеса
 let origin_y = height / 3; // Координата Y точки подвеса
 let trail_graphics; // Прозрачная поверхность для отрисовки траектории 2-й массы
@@ -131,7 +131,7 @@ function calculateEnergies() {
     let v2sq = v2x * v2x + v2y * v2y;
 
     let kinetic = 0.5 * m1 * v1sq + 0.5 * m2 * v2sq;
-    let potential = g * ((m1 + m2) * (origin_y + 2 * l_max) - m1 * y1 - m2 * y2);
+    let potential = g * (m1 * (origin_y - y1) + m2 * (origin_y - y2) + 2 * (m1 + m2)*l_max);
 
     return { kinetic, potential };
 }
