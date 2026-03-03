@@ -14,26 +14,31 @@ let w1 = start_w1;
 let w2 = start_w2;
 let x1, y1, x2, y2;
 let energy_history = []; // Массив с точками графика зависимости энергии от времени
-const max_history = 200; // Кол-во точек на графике зависимости энергии от времени
+const max_history = 500; // Кол-во точек на графике зависимости энергии от времени
 
-let dt = 0.05; // Точность симуляции
+const dt = 0.05; // Точность симуляции
 
 // Интерфейс
-let width = 1200; // Ширина окна
-let height = 900; // Высота окна
-let origin_x = width / 2; // Координата X точки подвеса
-let origin_y = height / 3; // Координата Y точки подвеса
-let trail_graphics; // Прозрачная поверхность для отрисовки траектории 2-й массы
+const simulation_window_size = 1000; // Размер окна с симуляцией
+const settings_width = 300; // Ширина блока настроек
+const plot_h = 200; // Высота графика зависимости энергии от времени
+const plot_w = simulation_window_size; // Ширина графика
+const width = simulation_window_size + settings_width; // Ширина окна
+const height = simulation_window_size + plot_h; // Высота окна
+const origin_x = simulation_window_size / 2 + settings_width; // Координата X точки подвеса
+const origin_y = simulation_window_size / 2; // Координата Y точки подвеса
+const l_max = Math.min(height - origin_y, width - origin_x) / 2; // Максимальная длина плеча маятника
+let settings_graphics; // Поверхность для блока с настройками
+let settings_button, ok_button, cancel_button; // Кнопки для расширенной панели настроек
 let m1_slider, m2_slider, l1_slider, l2_slider, g_slider; // Ползунки для настройки параметров системы
+let fi1_input, fi2_input, w1_input, w2_input;  // Поля ввода НУ в расширенной панели настроек
+let fi1_label, fi2_label, w1_label, w2_label; // Подписи для полей ввода
+let trail_graphics; // Прозрачная поверхность для отрисовки траектории 2-й массы
 let trail_checkbox; // Галочка для отрисовки траектории движения
 let gradient_checkbox; // Галочки режима с траекторией, характеризующей скорость массы
 let energy_graphics; // Поверхность для отрисовки графика зависимости энергии от времени
-let plot_x, plot_y, plot_w, plot_h; // Координаты графика зависимости энергии от времени и его характеристики
-let settings_button, ok_button, cancel_button; // Кнопки для расширенной панели настроек
-let fi1_input, fi2_input, w1_input, w2_input;  // Поля ввода НУ в расширенной панели настроек
-let fi1_label, fi2_label, w1_label, w2_label; // Подписи для полей ввода
+let plot_x, plot_y; // Координаты графика зависимости энергии от времени
 let paused = false;
-const l_max = (height - origin_y) / 2 - 10; // Максимальная длина плеча маятника
 
 
 function calculateCoordinates() { // Вычисление координат масс
@@ -138,7 +143,7 @@ function calculateEnergies() {
 
 function drawEnergyPlots() {
     // Настраиваем слой
-    energy_graphics.background(30, 30, 30, 200); // Полупрозрачный фон
+    energy_graphics.background(28, 33, 39, 255);
     energy_graphics.strokeWeight(2);
     energy_graphics.noFill();
 
@@ -276,15 +281,15 @@ function setup() { // Отрисовка интерфейса
     let parametres_x = 20;
     let parametres_y = 20;
 
-    plot_w = 300;
-    plot_h = 200;
-    plot_x = 20;
-    plot_y = height - 20 - plot_h;
+    plot_x = settings_width;
+    plot_y = height - plot_h;
 
     createCanvas(width, height);
     trail_graphics = createGraphics(width, height);
     trail_graphics.clear();
     energy_graphics = createGraphics(plot_w, plot_h);
+    settings_graphics = createGraphics(settings_width, height);
+    settings_graphics.clear();
 
     // Создание слайдеров (ползунков)
     m1_slider = createSlider(10, 500, 100, 10); // (min, max, initial, step)
@@ -422,7 +427,9 @@ function setup() { // Отрисовка интерфейса
 }
 
 function draw() {
-    background(20, 45, 60);
+    background(34, 37, 42);
+    settings_graphics.background(28, 33, 39, 255);
+    image(settings_graphics, 0, 0);
 
     m1 = m1_slider.value();
     m2 = m2_slider.value();
