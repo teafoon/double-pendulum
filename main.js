@@ -14,7 +14,8 @@ let w1 = start_w1;
 let w2 = start_w2;
 let x1, y1, x2, y2;
 let energy_history = []; // Массив с точками графика зависимости энергии от времени
-const max_history = 500; // Кол-во точек на графике зависимости энергии от времени
+let energy_max = 0;
+const max_history = 1000; // Кол-во точек на графике зависимости энергии от времени
 
 const dt = 0.05; // Точность симуляции
 
@@ -136,9 +137,13 @@ function calculateEnergies() {
     let v2sq = v2x * v2x + v2y * v2y;
 
     let kinetic = 0.5 * m1 * v1sq + 0.5 * m2 * v2sq;
-    let potential = g * (m1 * (origin_y - y1) + m2 * (origin_y - y2) + 2 * (m1 + m2)*l_max);
+    
+    let offset = g * 2 * (m1 + m2) * l_max;
+    let potential = g * (m1 * (origin_y - y1) + m2 * (origin_y - y2)) + offset;
+    let total = kinetic + potential;
+    let max = Math.max(total, kinetic);
 
-    return { kinetic, potential };
+    return { kinetic, potential, total, max };
 }
 
 function drawEnergyPlots() {
@@ -147,17 +152,15 @@ function drawEnergyPlots() {
     energy_graphics.strokeWeight(2);
     energy_graphics.noFill();
 
-    let energy_max = 0;
-    for (let e of energy_history) {
-        energy_max = Math.max(energy_max, e.kinetic, e.potential, e.kinetic + e.potential);
-    }
+    let x_step = (plot_w - 30) / (max_history - 1);
+    let y_scale = (plot_h - 30) / energy_max;
 
     // Суммарная энергия (белая)
     energy_graphics.stroke(255, 255, 255);
     energy_graphics.beginShape();
     for (let i = 0; i < energy_history.length; i++) {
-        let x = map(i, 0, max_history - 1, 20, plot_w - 10);
-        let y = map(energy_history[i].kinetic + energy_history[i].potential, 0, energy_max, plot_h - 20, 10);
+        let x = 20 + i * x_step;
+        let y = plot_h - 20 - energy_history[i].total * y_scale;
         energy_graphics.vertex(x, y);
     }
     energy_graphics.endShape();
@@ -166,8 +169,8 @@ function drawEnergyPlots() {
     energy_graphics.stroke(255, 100, 100);
     energy_graphics.beginShape();
     for (let i = 0; i < energy_history.length; i++) {
-        let x = map(i, 0, max_history - 1, 20, plot_w - 10);
-        let y = map(energy_history[i].kinetic, 0, energy_max, plot_h - 20, 10);
+        let x = 20 + i * x_step;
+        let y = plot_h - 20 - energy_history[i].kinetic * y_scale;
         energy_graphics.vertex(x, y);
     }
     energy_graphics.endShape();
@@ -176,8 +179,8 @@ function drawEnergyPlots() {
     energy_graphics.stroke(100, 150, 255);
     energy_graphics.beginShape();
     for (let i = 0; i < energy_history.length; i++) {
-        let x = map(i, 0, max_history - 1, 20, plot_w - 10);
-        let y = map(energy_history[i].potential, 0, energy_max, plot_h - 20, 10);
+        let x = 20 + i * x_step;
+        let y = plot_h - 20 - energy_history[i].potential * y_scale;
         energy_graphics.vertex(x, y);
     }
     energy_graphics.endShape();
@@ -191,7 +194,7 @@ function drawEnergyPlots() {
     energy_graphics.fill(255);
     energy_graphics.noStroke();
     energy_graphics.textSize(10);
-    energy_graphics.text('All', plot_w - 20, 20);
+    energy_graphics.text('Total', plot_w - 30, 20);
     energy_graphics.fill(100, 150, 255);
     energy_graphics.text('Potential', plot_w - 48, 35);
     energy_graphics.fill(255, 100, 100);
@@ -285,7 +288,7 @@ function setup() { // Отрисовка интерфейса
     plot_y = height - plot_h;
 
     createCanvas(width, height);
-    trail_graphics = createGraphics(width, height);
+    trail_graphics = createGraphics(simulation_window_size, simulation_window_size);
     trail_graphics.clear();
     energy_graphics = createGraphics(plot_w, plot_h);
     settings_graphics = createGraphics(settings_width, height);
@@ -449,8 +452,8 @@ function draw() {
         trail_graphics.stroke(trail_colour * 16, trail_colour * 4, trail_colour, 255);}
     else {trail_graphics.stroke(255, 100, 0, 100);}
     trail_graphics.strokeWeight(1);
-    trail_graphics.line(ex_x2, ex_y2, x2, y2); // траектория движения 2-й массы
-    if (trail_checkbox.checked()) {image(trail_graphics, 0, 0);}
+    trail_graphics.line(ex_x2 - settings_width, ex_y2, x2 - settings_width, y2); // траектория движения 2-й массы
+    if (trail_checkbox.checked()) {image(trail_graphics, settings_width, 0);}
 
     // Отрисовка маятника
     stroke(0);
@@ -463,8 +466,17 @@ function draw() {
 
     // Расчет и сохранение значений энергий
     let energies = calculateEnergies();
+    energy_max = Math.max(energy_max, energies.max);
     energy_history.push(energies);
-    if (energy_history.length > max_history) {energy_history.shift();}
+    if (energy_history.length > max_history) {
+        let removed = energy_history.shift();
+        if (removed.max >= energy_max) {
+            energy_max = 0;
+            for (let e of energy_history) {
+                energy_max = Math.max(energy_max, e.max);
+            }
+        }
+    }
 
     drawEnergyPlots();
 
