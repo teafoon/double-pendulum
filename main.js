@@ -26,6 +26,7 @@ let mass1X, mass1Y;         // Координаты 1-й массы
 let mass2X, mass2Y;         // Координаты 2-й массы
 
 // Параметры симуляции
+const PX_PER_METER = 100;
 const DT = 0.01;                 // Шаг интегрирования (с) (точность симуляции)
 const MAX_FRAME_TIME = 0.1;      // Защита от больших скачков времени (например, вкладка подвисла) (с)
 const MAX_STEPS_PER_FRAME = 500; // Защита от бесконечного while при сильных лагах
@@ -688,8 +689,8 @@ function setup() { // Отрисовка интерфейса
 
     mass1Slider = createSlider(0.1, 5, 1, 0.1);
     mass2Slider = createSlider(0.1, 5, 1, 0.1);
-    length1Slider = createSlider(0.1, L_MAX / 100, 1, 0.1);
-    length2Slider = createSlider(0.1, L_MAX / 100, 1.5, 0.1);
+    length1Slider = createSlider(0.1, L_MAX / PX_PER_METER, 1, 0.1);
+    length2Slider = createSlider(0.1, L_MAX / PX_PER_METER, 1.5, 0.1);
     gMultiplierSlider  = createSlider(0, 10, 1, 0.1);
     speedSlider = createSlider(0.1, 10, 1, 0.1);
 
@@ -737,18 +738,18 @@ function setup() { // Отрисовка интерфейса
     divider3.addClass("section-divider");
 
     clearTrailButton = createButton('Clear trail');
+    restartButton = createButton('Restart');
+
     styleUiButtonTransparent(clearTrailButton, BTN_W, BTN_H);
     clearTrailButton.mousePressed(() => trailGraphics.clear());
-
-    trailCheckbox = createCheckbox('Show trail', true);
-    styleUiCheckbox(trailCheckbox);
-
-    gradientCheckbox = createCheckbox('Gradient mode', true);
-    styleUiCheckbox(gradientCheckbox);
-
-    restartButton = createButton('Restart');
     styleUiButton(restartButton, BTN_W, BTN_H);
     restartButton.mousePressed(() => restartSimulation());
+
+    trailCheckbox = createCheckbox('Show trail', true);
+    gradientCheckbox = createCheckbox('Gradient mode', true);
+
+    styleUiCheckbox(trailCheckbox);
+    styleUiCheckbox(gradientCheckbox);
 
     pauseButton = createButton('Pause');
     styleUiButtonAccent(pauseButton, BTN_W, BTN_H);
@@ -756,10 +757,6 @@ function setup() { // Отрисовка интерфейса
         paused = !paused;
         pauseButton.html(paused ? 'Resume' : 'Pause');
     });
-
-    // Позже сделаю отрисовку, как для предыдущего блока
-    let settings_x = 14;
-    let settings_y = 655; 
 
     settingsButton = createButton('Change start parameters');
     styleUiButtonTransparent(settingsButton);
@@ -769,43 +766,42 @@ function setup() { // Отрисовка интерфейса
     settingsButton.mousePressed(settingsHandler);
 
     okButton = createButton('OK');
-    okButton.mousePressed(applySettings);
-    okButton.hide();
-
     cancelButton = createButton('Cancel');
+
+    okButton.mousePressed(applySettings);
     cancelButton.mousePressed(cancelSettings);
+    
+    okButton.hide();
     cancelButton.hide();
 
     phi1Label = createDiv('phi1:');
-    phi1Label.style('color', 'white');
-    phi1Label.hide();
-
-    phi1Input = createInput(startPhi1.toFixed(2));
-    phi1Input.size(60);
-    phi1Input.hide();
-
     phi2Label = createDiv('phi2:');
-    phi2Label.style('color', 'white');
-    phi2Label.hide();
-
-    phi2Input = createInput(startPhi2.toFixed(2));
-    phi2Input.size(60);
-    phi2Input.hide();
-
     omega1Label = createDiv('omega1:');
-    omega1Label.style('color', 'white');
-    omega1Label.hide();
-
-    omega1Input = createInput(startOmega1.toFixed(2));
-    omega1Input.size(60);
-    omega1Input.hide();
-
     omega2Label = createDiv('omega2:');
+
+    phi1Label.style('color', 'white');
+    phi2Label.style('color', 'white');
+    omega1Label.style('color', 'white');
     omega2Label.style('color', 'white');
+
+    phi1Label.hide();
+    phi2Label.hide();
+    omega1Label.hide();
     omega2Label.hide();
 
+    phi1Input = createInput(startPhi1.toFixed(2));
+    phi2Input = createInput(startPhi2.toFixed(2));
+    omega1Input = createInput(startOmega1.toFixed(2));
     omega2Input = createInput(startOmega2.toFixed(2));
+    
+    phi1Input.size(60);
+    phi2Input.size(60);
+    omega1Input.size(60);
     omega2Input.size(60);
+
+    phi1Input.hide();
+    phi2Input.hide();
+    omega1Input.hide();
     omega2Input.hide();
 
     layoutSidebar();
@@ -820,10 +816,10 @@ function draw() {
 
     mass1 = mass1Slider.value();
     mass2 = mass2Slider.value();
-    length1 = length1Slider.value() * 100;
-    length2 = length2Slider.value() * 100;
+    length1 = length1Slider.value() * PX_PER_METER;
+    length2 = length2Slider.value() * PX_PER_METER;
     gMultiplier = gMultiplierSlider.value();
-    gravity = gMultiplier * G;
+    gravity = PX_PER_METER * gMultiplier * G;
 
     // Сохранение координат 2-й массы
     let prevMass2X = mass2X;
