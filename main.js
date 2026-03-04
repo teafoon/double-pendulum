@@ -159,6 +159,8 @@ function styleUiCheckbox(cb) {
   const input = cb.elt.querySelector('input');
   if (input) input.style.accentColor = ACCENT_COLOR;
   cb.style('color', TEXT_COLOR);
+  cb.style('font-weight', '350');
+  cb.style('font-size', `${BUTTON_FONT_SIZE}px`);
 }
 
 function styleUiButton(btn, w = BTN_W, h = BTN_H) { // Функция кастомизации кнопки
