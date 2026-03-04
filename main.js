@@ -1,68 +1,129 @@
 // Курсовая работа на тему "Симуляция двойного маятника"
 
-const G = 9.81; // Ускорение свободного падения
+// Физика
+const G = 9.81; // Ускорение свободного падения (м/с^2)
 
-let m1, m2, l1, l2, g; // Основные параметры системы
+// Параметры системы (задаются слайдерами)
+let mass1;       // Масса 1-й массы (кг)
+let mass2;       // Масса 2-й массы (кг)
+let length1;     // Длина 1-го плеча (условные единицы)
+let length2;     // Длина 2-го плеча (условные единицы)
+let gMultiplier; // Множитель gravity (в единицах gravity)
+let gravity;     // Текущее ускорение свободного падения с учётом множителя (м/с^2)
 
 // Начальные условия
-let start_fi1 = 0;
-let start_fi2 = Math.PI;
-let start_w1 = 0.8;
-let start_w2 = 0.5;
+let startPhi1 = 0;        // Начальный угол 1-й массы (рад)
+let startPhi2 = Math.PI;  // Начальный угол 2-й массы (рад)
+let startOmega1 = 0.8;    // Начальная угловая скорость 1-й массы (рад/с)
+let startOmega2 = 0.5;    // Начальная угловая скорость 2-й массы (рад/с)
 
-let fi1 = start_fi1; 
-let fi2 = start_fi2;
-let w1 = start_w1;
-let w2 = start_w2;
-let x1, y1, x2, y2;
-let energy_history = []; // Массив с точками графика зависимости энергии от времени
-let energy_max = 0;
+// Текущее состояние системы
+let phi1 = startPhi1;       // Текущий угол 1-й массы (рад)
+let phi2 = startPhi2;       // Текущий угол 2-й массы (рад)
+let omega1 = startOmega1;   // Текущая угловая скорость 1-й массы (рад/с)
+let omega2 = startOmega2;   // Текущая угловая скорость 2-й массы (рад/с)
+let mass1X, mass1Y;         // Координаты 1-й массы
+let mass2X, mass2Y;         // Координаты 2-й массы
 
-const dt = 0.05; // Точность симуляции
+// Параметры симуляции
+const DT = 0.05; // Точность симуляции (шаг интегрирования)
 
-// Интерфейс
-const WIDTH = window.innerWidth; // Ширина окна
-const HEIGHT = window.innerHeight; // Высота окна
+// Интерфейс (размеры и расположение)
 const SETTINGS_WIDTH = 200; // Ширина блока настроек
-const PLOT_H = 200; // Высота графика зависимости энергии от времени
-const SIMULATION_WINDOW_HEIGHT = HEIGHT - PLOT_H; // Высота окна с симуляцией
-const SIMULATION_WINDOW_WIDTH = WIDTH - SETTINGS_WIDTH; // Ширина окна с симуляцией
-const PLOT_W = SIMULATION_WINDOW_WIDTH; // Ширина графика
+const PLOT_H = 200;         // Высота графика зависимости энергии от времени
+const WIDTH = window.innerWidth;   // Ширина окна
+const HEIGHT = window.innerHeight; // Высота окна
+const SIMULATION_WINDOW_HEIGHT = HEIGHT - PLOT_H;         // Высота окна с симуляцией
+const SIMULATION_WINDOW_WIDTH = WIDTH - SETTINGS_WIDTH;   // Ширина окна с симуляцией
+const PLOT_W = SIMULATION_WINDOW_WIDTH;                   // Ширина графика энергии
+const PLOT_X = SETTINGS_WIDTH;                            // Координата X графика энергии
+const PLOT_Y = HEIGHT - PLOT_H;                           // Координата Y графика энергии
 const ORIGIN_X = SIMULATION_WINDOW_WIDTH / 2 + SETTINGS_WIDTH; // Координата X точки подвеса
-const ORIGIN_Y = SIMULATION_WINDOW_HEIGHT / 2; // Координата Y точки подвеса
+const ORIGIN_Y = SIMULATION_WINDOW_HEIGHT / 2;                 // Координата Y точки подвеса
 const L_MAX = Math.min(SIMULATION_WINDOW_HEIGHT, SIMULATION_WINDOW_WIDTH) / 4; // Максимальная длина плеча маятника
+
+// Элементы интерфейса
 const BTN_W = 80; // Длина кнопок
 const BTN_H = 24; // Ширина кнопок
-let settings_graphics; // Поверхность для блока с настройками
-let settings_button, ok_button, cancel_button; // Кнопки для расширенной панели настроек
-let m1_slider, m2_slider, l1_slider, l2_slider, g_slider; // Ползунки для настройки параметров системы
-let fi1_input, fi2_input, w1_input, w2_input;  // Поля ввода НУ в расширенной панели настроек
-let fi1_label, fi2_label, w1_label, w2_label; // Подписи для полей ввода
-let trail_graphics; // Прозрачная поверхность для отрисовки траектории 2-й массы
-let trail_checkbox; // Галочка для отрисовки траектории движения
-let gradient_checkbox; // Галочки режима с траекторией, характеризующей скорость массы
-let energy_graphics; // Поверхность для отрисовки графика зависимости энергии от времени
-let plot_x, plot_y; // Координаты графика зависимости энергии от времени
-let paused = false;
-let model_parametrs_title, trail_parametrs_title;
-let divider_1, divider_2, divider_3;
-let m1_label, m2_label, l1_label, l2_label, g_label;
-let trail_clear_button;
-let restart_button, pause_button;
-let speed_slider, speed_label, speed_value_tag;
-let m1_value_tag, m2_value_tag, l1_value_tag, l2_value_tag, g_value_tag;
-const textColor = '#9b9b9b';
-const accentColor = '#0060DF';
-const TITLE_FONT_SIZE = 16;
-const FONT_SIZE = 14;
-const BUTTON_FONT_SIZE = 14;
-const max_history = SIMULATION_WINDOW_WIDTH; // Кол-во точек на графике зависимости энергии от времени
+
+// Оформление интерфейса
+const TEXT_COLOR = '#9b9b9b';   // Цвет текста боковой панели
+const ACCENT_COLOR = '#0060DF'; // Акцентный цвет
+const TITLE_FONT_SIZE = 16;       // Размер шрифта заголовков
+const FONT_SIZE = 14;             // Размер шрифта подписей
+const BUTTON_FONT_SIZE = 14;      // Размер шрифта кнопок
+
+// График энергии
+const ENERGY_HISTORY = [];                   // Массив точек графика зависимости энергии от времени
+const MAX_HISTORY = SIMULATION_WINDOW_WIDTH; // Кол-во точек на графике зависимости энергии от времени
+let energyMax = 0;                           // Максимальная энергия на графике
+
+// Поверхности для отрисовки
+let settingsGraphics; // Поверхность для блока настроек
+let trailGraphics;    // Поверхность для траектории 2-й массы
+let energyGraphics;   // Поверхность для графика энергии
+
+// UI-элементы панели настроек
+let settingsButton; // Кнопка открытия панели НУ
+let okButton;       // Кнопка подтверждения НУ
+let cancelButton;   // Кнопка отмены НУ
+
+let mass1Slider;       // Слайдер массы 1
+let mass2Slider;       // Слайдер массы 2
+let length1Slider;     // Слайдер длины 1
+let length2Slider;     // Слайдер длины 2
+let gMultiplierSlider; // Слайдер множителя gravity
+
+let phi1Input;   // Поле ввода угла phi1
+let phi2Input;   // Поле ввода угла phi2
+let omega1Input; // Поле ввода omega1
+let omega2Input; // Поле ввода omega2
+
+let phi1Label;   // Подпись к полю ввода phi1
+let phi2Label;   // Подпись к полю ввода phi2
+let omega1Label; // Подпись к полю ввода omega1
+let omega2Label; // Подпись к полю ввода omega2
+
+let trailCheckbox;    // Чекбокс отображения траектории
+let gradientCheckbox; // Чекбокс градиентного режима
+
+// Заголовки и разделители
+let modelParametersTitle; // Заголовок "Model parameters"
+let trailParametersTitle; // Заголовок "Trail"
+let divider1;             // Разделитель 1
+let divider2;             // Разделитель 2
+let divider3;             // Разделитель 3
+
+// Подписи и подсказки значений
+let mass1Label;       // Подпись слайдера массы 1
+let mass2Label;       // Подпись слайдера массы 2
+let length1Label;     // Подпись слайдера длины 1
+let length2Label;     // Подпись слайдера длины 2
+let gMultiplierLabel; // Подпись слайдера gravity
+
+let mass1ValueTag;       // Баббл значения массы 1
+let mass2ValueTag;       // Баббл значения массы 2
+let length1ValueTag;     // Баббл значения длины 1
+let length2ValueTag;     // Баббл значения длины 2
+let gMultiplierValueTag; // Баббл значения gravity
+
+let speedSlider;   // Слайдер скорости симуляции
+let speedLabel;    // Подпись слайдера скорости
+let speedValueTag; // Баббл значения скорости
+
+// Кнопки управления
+let clearTrailButton; // Кнопка очистки траектории
+let restartButton;    // Кнопка перезапуска
+let pauseButton;      // Кнопка паузы
+
+// Флаги
+let paused = false; // Флаг паузы симуляции
 
 
 function styleUiCheckbox(cb) {
   const input = cb.elt.querySelector('input');
-  if (input) input.style.accentColor = accentColor;
-  cb.style('color', textColor);
+  if (input) input.style.accentColor = ACCENT_COLOR;
+  cb.style('color', TEXT_COLOR);
 }
 
 function styleUiButton(btn, w = BTN_W, h = BTN_H) { // Функция кастомизации кнопки
@@ -72,7 +133,7 @@ function styleUiButton(btn, w = BTN_W, h = BTN_H) { // Функция касто
     btn.style('font-weight', '500');
     btn.style('font-size', `${BUTTON_FONT_SIZE}px`);
     btn.style('background-color', '#2b3440');
-    btn.style('color', accentColor);
+    btn.style('color', ACCENT_COLOR);
     btn.style('border', '0px solid #3a4553');
     btn.style('border-radius', '6px');
     btn.style('cursor', 'pointer');
@@ -89,7 +150,7 @@ function styleUiButtonTransparent(btn, w = BTN_W, h = BTN_H) { // Функция
     btn.style('font-size', `${BUTTON_FONT_SIZE}px`);
     btn.style('background-color', '#1C2127'); // 28, 33, 39 (Цвет боковой панели)
     btn.style('opacity', '1'); // Значение 0 делает кнопку полностью невидимой
-    btn.style('color', accentColor);
+    btn.style('color', ACCENT_COLOR);
     btn.style('border', '0px solid #1C2127');
     btn.style('cursor', 'pointer');  
 }
@@ -100,18 +161,18 @@ function styleUiButtonAccent(btn, w = BTN_W, h = BTN_H) { // Функция ка
     btn.style('font-family', 'Inter, sans-serif');
     btn.style('font-weight', '500');
     btn.style('font-size', '12px');
-    btn.style('background-color', accentColor);
+    btn.style('background-color', ACCENT_COLOR);
     btn.style('color', '#ffffff');
     btn.style('border', '0px solid #3a4553');
     btn.style('border-radius', '6px');
     btn.style('cursor', 'pointer');
 
     btn.mouseOver(() => btn.style('background-color', '#3a4553')); // ИЗМЕНИ ЦВЕТ -------------------------------------------------
-    btn.mouseOut(() => btn.style('background-color', accentColor));
+    btn.mouseOut(() => btn.style('background-color', ACCENT_COLOR));
 }
 
 function styleUiLabel(div) { // Функция кастомизации подписи слайдеров
-    div.style('color', textColor);
+    div.style('color', TEXT_COLOR);
     div.style('font-family', 'Inter, sans-serif');
     div.style('font-size', `${FONT_SIZE}px`);
     div.style('font-weight', '350');
@@ -285,69 +346,69 @@ function layoutSidebar() {
 
 
     // Блок настройки основных параметров системы (Model parameters)
-    placeTitle(model_parametrs_title);
+    placeTitle(modelParametersTitle);
 
-    placeSlider(m1_slider, m1_label, m1_value_tag, ' kg');
-    placeSlider(m2_slider, m2_label, m2_value_tag, ' kg');
-    placeSlider(l1_slider, l1_label, l1_value_tag, ' m');
-    placeSlider(l2_slider, l2_label, l2_value_tag, ' m');
-    placeSlider(g_slider, g_label, g_value_tag, ' g');
+    placeSlider(mass1Slider, mass1Label, mass1ValueTag, ' kg');
+    placeSlider(mass2Slider, mass2Label, mass2ValueTag, ' kg');
+    placeSlider(length1Slider, length1Label, length1ValueTag, ' m');
+    placeSlider(length2Slider, length2Label, length2ValueTag, ' m');
+    placeSlider(gMultiplierSlider, gMultiplierLabel, gMultiplierValueTag, ' gravity');
 
     y -= 19;
 
-    placeDivider(divider_1);
+    placeDivider(divider1);
 
     // Блок настройки траектории (Trail)
-    placeTitle(trail_parametrs_title);
+    placeTitle(trailParametersTitle);
 
     // Кнопка очистки траектории
     // располагается справа от заголовка секции
-    trail_clear_button.position(
+    clearTrailButton.position(
         x + w - BTN_W,
         y - TITLE_GAP + BTN_H - 9
     );
 
     // Чекбокс отображения траектории
-    trail_checkbox.position(x - 2, y);
+    trailCheckbox.position(x - 2, y);
     y += CHECKBOX_GAP;
 
     // Чекбокс режима градиента
-    gradient_checkbox.position(x - 2, y);
+    gradientCheckbox.position(x - 2, y);
     y += 6;
 
-    placeDivider(divider_2);
+    placeDivider(divider2);
   
     y += FONT_SIZE;
 
-    placeSlider(speed_slider, speed_label, speed_value_tag, 'x');
+    placeSlider(speedSlider, speedLabel, speedValueTag, 'x');
 
     y -= 20;
 
     // Кнопки Restart и Pause
-    pause_button.position(x, y + BTN_H);
-    restart_button.position(x + BTN_W + 10, y + BTN_H);
+    pauseButton.position(x, y + BTN_H);
+    restartButton.position(x + BTN_W + 10, y + BTN_H);
 
     y += BTN_H + DIVIDER_GAP;
 
-    placeDivider(divider_3);
+    placeDivider(divider3);
 }
 
 function calculateCoordinates() { // Вычисление координат масс
-    x1 = ORIGIN_X + l1 * Math.sin(fi1);
-    y1 = ORIGIN_Y + l1 * Math.cos(fi1);
-    x2 = x1 + l2 * Math.sin(fi2);
-    y2 = y1 + l2 * Math.cos(fi2);
+    mass1X = ORIGIN_X + length1 * Math.sin(phi1);
+    mass1Y = ORIGIN_Y + length1 * Math.cos(phi1);
+    mass2X = mass1X + length2 * Math.sin(phi2);
+    mass2Y = mass1Y + length2 * Math.cos(phi2);
 }
 
 function restartSimulation() {
-    fi1 = start_fi1; 
-    fi2 = start_fi2;
-    w1 = start_w1;
-    w2 = start_w2;
+    phi1 = startPhi1; 
+    phi2 = startPhi2;
+    omega1 = startOmega1;
+    omega2 = startOmega2;
     calculateCoordinates();
-    trail_graphics.clear();
-    energy_history = [];
-    energy_max = 0;
+    trailGraphics.clear();
+    ENERGY_HISTORY.length = 0;
+    energyMax = 0;
 }
 
 function computeDerivatives(phi1, phi2, omega1, omega2) {
@@ -355,18 +416,18 @@ function computeDerivatives(phi1, phi2, omega1, omega2) {
     let delta = phi1 - phi2;
     let sinDelta = Math.sin(delta);
     let cosDelta = Math.cos(delta);
-    let denom = 2*m1 + m2 - m2*Math.cos(2*delta);
+    let denom = 2*mass1 + mass2 - mass2*Math.cos(2*delta);
     if (Math.abs(denom) < 1e-6) {denom = 1e-6;} // Защита от деления на ноль
 
     // Угловое ускорение первой массы
-    let a1_1 = -g * (2*m1 + m2) * Math.sin(phi1);
-    let a1_2 = -m2 * g * Math.sin(phi1 - 2*phi2);
-    let a1_3 = -2 * sinDelta * m2 * (omega2*omega2*l2 + omega1*omega1*l1*cosDelta);
-    let a1 = (a1_1 + a1_2 + a1_3) / (l1 * denom);
+    let a1_1 = -gravity * (2*mass1 + mass2) * Math.sin(phi1);
+    let a1_2 = -mass2 * gravity * Math.sin(phi1 - 2*phi2);
+    let a1_3 = -2 * sinDelta * mass2 * (omega2*omega2*length2 + omega1*omega1*length1*cosDelta);
+    let a1 = (a1_1 + a1_2 + a1_3) / (length1 * denom);
 
     // Угловое ускорение второй массы
-    let a2_1 = 2 * sinDelta * (omega1*omega1*l1*(m1 + m2) + g*(m1 + m2)*Math.cos(phi1) + omega2*omega2*l2*m2*cosDelta);
-    let a2 = a2_1 / (l2 * denom);
+    let a2_1 = 2 * sinDelta * (omega1*omega1*length1*(mass1 + mass2) + gravity*(mass1 + mass2)*Math.cos(phi1) + omega2*omega2*length2*mass2*cosDelta);
+    let a2 = a2_1 / (length2 * denom);
 
     return {
         dphi1: omega1,
@@ -377,47 +438,51 @@ function computeDerivatives(phi1, phi2, omega1, omega2) {
 }
 
 function rk4(dt) { // Метод Рунге–Кутты 4-го порядка
-    // Текущее состояние
-    let phi1 = fi1, phi2 = fi2, omega1 = w1, omega2 = w2;
+    // Текущее состояние (локальные копии, чтобы корректно посчитать k1..k4)
+    let phi1Local = phi1;
+    let phi2Local = phi2;
+    let omega1Local = omega1;
+    let omega2Local = omega2;
 
-    let k1 = computeDerivatives(phi1, phi2, omega1, omega2);
+    let k1 = computeDerivatives(phi1Local, phi2Local, omega1Local, omega2Local);
 
     let k2 = computeDerivatives(
-        phi1 + 0.5 * dt * k1.dphi1,
-        phi2 + 0.5 * dt * k1.dphi2,
-        omega1 + 0.5 * dt * k1.domega1,
-        omega2 + 0.5 * dt * k1.domega2
+        phi1Local + 0.5 * dt * k1.dphi1,
+        phi2Local + 0.5 * dt * k1.dphi2,
+        omega1Local + 0.5 * dt * k1.domega1,
+        omega2Local + 0.5 * dt * k1.domega2
     );
 
     let k3 = computeDerivatives(
-        phi1 + 0.5 * dt * k2.dphi1,
-        phi2 + 0.5 * dt * k2.dphi2,
-        omega1 + 0.5 * dt * k2.domega1,
-        omega2 + 0.5 * dt * k2.domega2
+        phi1Local + 0.5 * dt * k2.dphi1,
+        phi2Local + 0.5 * dt * k2.dphi2,
+        omega1Local + 0.5 * dt * k2.domega1,
+        omega2Local + 0.5 * dt * k2.domega2
     );
 
     let k4 = computeDerivatives(
-        phi1 + dt * k3.dphi1,
-        phi2 + dt * k3.dphi2,
-        omega1 + dt * k3.domega1,
-        omega2 + dt * k3.domega2
+        phi1Local + dt * k3.dphi1,
+        phi2Local + dt * k3.dphi2,
+        omega1Local + dt * k3.domega1,
+        omega2Local + dt * k3.domega2
     );
 
     // Итоговое изменение
-    fi1 += dt/6 * (k1.dphi1 + 2*k2.dphi1 + 2*k3.dphi1 + k4.dphi1);
-    fi2 += dt/6 * (k1.dphi2 + 2*k2.dphi2 + 2*k3.dphi2 + k4.dphi2);
-    w1  += dt/6 * (k1.domega1 + 2*k2.domega1 + 2*k3.domega1 + k4.domega1);
-    w2  += dt/6 * (k1.domega2 + 2*k2.domega2 + 2*k3.domega2 + k4.domega2);
+    phi1   += dt/6 * (k1.dphi1   + 2*k2.dphi1   + 2*k3.dphi1   + k4.dphi1);
+    phi2   += dt/6 * (k1.dphi2   + 2*k2.dphi2   + 2*k3.dphi2   + k4.dphi2);
+    omega1 += dt/6 * (k1.domega1 + 2*k2.domega1 + 2*k3.domega1 + k4.domega1);
+    omega2 += dt/6 * (k1.domega2 + 2*k2.domega2 + 2*k3.domega2 + k4.domega2);
 }
+
 
 function getVelocities() { // Расчет скоростей масс
     // Расчет скорости 1-й массы
-    let v1x = l1 * Math.cos(fi1) * w1;
-    let v1y = -l1 * Math.sin(fi1) * w1;
+    let v1x = length1 * Math.cos(phi1) * omega1;
+    let v1y = -length1 * Math.sin(phi1) * omega1;
 
     // Расчет скорости 2-й массы
-    let v2x = v1x + l2 * Math.cos(fi2) * w2;
-    let v2y = v1y - l2 * Math.sin(fi2) * w2;
+    let v2x = v1x + length2 * Math.cos(phi2) * omega2;
+    let v2y = v1y - length2 * Math.sin(phi2) * omega2;
 
     return { v1x, v1y, v2x, v2y };
 }
@@ -426,10 +491,10 @@ function calculateEnergies() {
     let { v1x, v1y, v2x, v2y } = getVelocities();
     let v1sq = v1x * v1x + v1y * v1y;
     let v2sq = v2x * v2x + v2y * v2y;
-    let kinetic = 0.5 * m1 * v1sq + 0.5 * m2 * v2sq;
+    let kinetic = 0.5 * mass1 * v1sq + 0.5 * mass2 * v2sq;
     
-    let offset = g * 2 * (m1 + m2) * L_MAX;
-    let potential = g * (m1 * (ORIGIN_Y - y1) + m2 * (ORIGIN_Y - y2)) + offset;
+    let offset = gravity * 2 * (mass1 + mass2) * L_MAX;
+    let potential = gravity * (mass1 * (ORIGIN_Y - mass1Y) + mass2 * (ORIGIN_Y - mass2Y)) + offset;
 
     let total = kinetic + potential;
     let max = Math.max(total, kinetic);
@@ -439,63 +504,63 @@ function calculateEnergies() {
 
 function drawEnergyPlots() {
     // Настраиваем слой
-    energy_graphics.background(28, 33, 39, 255);
-    energy_graphics.strokeWeight(2);
-    energy_graphics.noFill();
+    energyGraphics.background(28, 33, 39, 255);
+    energyGraphics.strokeWeight(2);
+    energyGraphics.noFill();
 
-    let x_step = (PLOT_W - 30) / (max_history - 1);
-    let y_scale = (PLOT_H - 30) / energy_max;
+    let xStep = (PLOT_W - 30) / (MAX_HISTORY - 1);
+    let yScale = (PLOT_H - 30) / energyMax;
 
     // Суммарная энергия (белая)
-    energy_graphics.stroke(255, 255, 255);
-    energy_graphics.beginShape();
-    for (let i = 0; i < energy_history.length; i++) {
-        let x = 20 + i * x_step;
-        let y = PLOT_H - 20 - energy_history[i].total * y_scale;
-        energy_graphics.vertex(x, y);
+    energyGraphics.stroke(255, 255, 255);
+    energyGraphics.beginShape();
+    for (let i = 0; i < ENERGY_HISTORY.length; i++) {
+        let x = 20 + i * xStep;
+        let y = PLOT_H - 20 - ENERGY_HISTORY[i].total * yScale;
+        energyGraphics.vertex(x, y);
     }
-    energy_graphics.endShape();
+    energyGraphics.endShape();
 
     // Кинетическая энергия (красная)
-    energy_graphics.stroke(255, 100, 100);
-    energy_graphics.beginShape();
-    for (let i = 0; i < energy_history.length; i++) {
-        let x = 20 + i * x_step;
-        let y = PLOT_H - 20 - energy_history[i].kinetic * y_scale;
-        energy_graphics.vertex(x, y);
+    energyGraphics.stroke(255, 100, 100);
+    energyGraphics.beginShape();
+    for (let i = 0; i < ENERGY_HISTORY.length; i++) {
+        let x = 20 + i * xStep;
+        let y = PLOT_H - 20 - ENERGY_HISTORY[i].kinetic * yScale;
+        energyGraphics.vertex(x, y);
     }
-    energy_graphics.endShape();
+    energyGraphics.endShape();
 
     // Потенциальная энергия (синяя)
-    energy_graphics.stroke(100, 150, 255);
-    energy_graphics.beginShape();
-    for (let i = 0; i < energy_history.length; i++) {
-        let x = 20 + i * x_step;
-        let y = PLOT_H - 20 - energy_history[i].potential * y_scale;
-        energy_graphics.vertex(x, y);
+    energyGraphics.stroke(100, 150, 255);
+    energyGraphics.beginShape();
+    for (let i = 0; i < ENERGY_HISTORY.length; i++) {
+        let x = 20 + i * xStep;
+        let y = PLOT_H - 20 - ENERGY_HISTORY[i].potential * yScale;
+        energyGraphics.vertex(x, y);
     }
-    energy_graphics.endShape();
+    energyGraphics.endShape();
 
     // Рисуем оси
-    energy_graphics.stroke(100);
-    energy_graphics.line(20, PLOT_H - 20, PLOT_W - 10, PLOT_H - 20); // Ось времени
-    energy_graphics.line(20, 10, 20, PLOT_H - 20); // Ось энергии
+    energyGraphics.stroke(100);
+    energyGraphics.line(20, PLOT_H - 20, PLOT_W - 10, PLOT_H - 20); // Ось времени
+    energyGraphics.line(20, 10, 20, PLOT_H - 20); // Ось энергии
 
     // Подписи
-    energy_graphics.fill(255);
-    energy_graphics.noStroke();
-    energy_graphics.textSize(10);
-    energy_graphics.text('Total', PLOT_W - 30, 20);
-    energy_graphics.fill(100, 150, 255);
-    energy_graphics.text('Potential', PLOT_W - 48, 35);
-    energy_graphics.fill(255, 100, 100);
-    energy_graphics.text('Kinetic', PLOT_W - 39, 50);
-    energy_graphics.fill('white');
-    energy_graphics.text('E', 7, 15);
-    energy_graphics.text('T', PLOT_W - 15, PLOT_H - 7);
+    energyGraphics.fill(255);
+    energyGraphics.noStroke();
+    energyGraphics.textSize(10);
+    energyGraphics.text('Total', PLOT_W - 30, 20);
+    energyGraphics.fill(100, 150, 255);
+    energyGraphics.text('Potential', PLOT_W - 48, 35);
+    energyGraphics.fill(255, 100, 100);
+    energyGraphics.text('Kinetic', PLOT_W - 39, 50);
+    energyGraphics.fill('white');
+    energyGraphics.text('E', 7, 15);
+    energyGraphics.text('T', PLOT_W - 15, PLOT_H - 7);
 
     // Выводим слой на основной холст
-    image(energy_graphics, plot_x, plot_y);
+    image(energyGraphics, PLOT_X, PLOT_Y);
 }
 
 function getTrailColor() { // Цвет траектории зависит от скорости
@@ -503,278 +568,275 @@ function getTrailColor() { // Цвет траектории зависит от 
     let v2sq = v2x * v2x + v2y * v2y;
 
     // Значение цвета
-    if (g < 11) {return v2sq / 200;}
-    else {return v2sq / g / 20;}
+    if (gravity < 11) {return v2sq / 200;}
+    else {return v2sq / gravity / 20;}
 }
 
 function settingsHandler() {
     // Показываем панель
-    fi1_label.show();
-    fi1_input.show();
-    fi2_label.show();
-    fi2_input.show();
-    w1_label.show();
-    w1_input.show();
-    w2_label.show();
-    w2_input.show();
-    ok_button.show();
-    cancel_button.show();
+    phi1Label.show();
+    phi1Input.show();
+    phi2Label.show();
+    phi2Input.show();
+    omega1Label.show();
+    omega1Input.show();
+    omega2Label.show();
+    omega2Input.show();
+    okButton.show();
+    cancelButton.show();
 
     // Прячем кнопку Settings
-    settings_button.hide();
+    settingsButton.hide();
 }
 
 function applySettings() {
     // Считываем значения из полей
-    let new_fi1 = parseFloat(fi1_input.value());
-    let new_fi2 = parseFloat(fi2_input.value());
-    let new_w1 = parseFloat(w1_input.value());
-    let new_w2 = parseFloat(w2_input.value());
+    let newPhi1 = parseFloat(phi1Input.value());
+    let newPhi2 = parseFloat(phi2Input.value());
+    let newOmega1 = parseFloat(omega1Input.value());
+    let newOmega2 = parseFloat(omega2Input.value());
 
     // Если введено не число, оставляем старое значение
-    if (!isNaN(new_fi1)) start_fi1 = new_fi1;
-    if (!isNaN(new_fi2)) start_fi2 = new_fi2;
-    if (!isNaN(new_w1)) start_w1 = new_w1;
-    if (!isNaN(new_w2)) start_w2 = new_w2;
+    if (!isNaN(newPhi1)) startPhi1 = newPhi1;
+    if (!isNaN(newPhi2)) startPhi2 = newPhi2;
+    if (!isNaN(newOmega1)) startOmega1 = newOmega1;
+    if (!isNaN(newOmega2)) startOmega2 = newOmega2;
 
     restartSimulation();
 
     // Скрываем панель
-    fi1_label.hide();
-    fi1_input.hide();
-    fi2_label.hide();
-    fi2_input.hide();
-    w1_label.hide();
-    w1_input.hide();
-    w2_label.hide();
-    w2_input.hide();
-    ok_button.hide();
-    cancel_button.hide();
+    phi1Label.hide();
+    phi1Input.hide();
+    phi2Label.hide();
+    phi2Input.hide();
+    omega1Label.hide();
+    omega1Input.hide();
+    omega2Label.hide();
+    omega2Input.hide();
+    okButton.hide();
+    cancelButton.hide();
 
     // Показываем кнопку Settings
-    settings_button.show();
+    settingsButton.show();
 }
 
 function cancelSettings() {
-    fi1_label.hide();
-    fi1_input.hide();
-    fi2_label.hide();
-    fi2_input.hide();
-    w1_label.hide();
-    w1_input.hide();
-    w2_label.hide();
-    w2_input.hide();
-    ok_button.hide();
-    cancel_button.hide();
+    phi1Label.hide();
+    phi1Input.hide();
+    phi2Label.hide();
+    phi2Input.hide();
+    omega1Label.hide();
+    omega1Input.hide();
+    omega2Label.hide();
+    omega2Input.hide();
+    okButton.hide();
+    cancelButton.hide();
 
-    settings_button.show();
+    settingsButton.show();
 }
 
 function setup() { // Отрисовка интерфейса
     injectSliderCss();
     
     createCanvas(WIDTH, HEIGHT);
+    trailGraphics = createGraphics(SIMULATION_WINDOW_WIDTH, SIMULATION_WINDOW_HEIGHT);
+    trailGraphics.clear();
+    energyGraphics = createGraphics(PLOT_W, PLOT_H);
+    settingsGraphics = createGraphics(SETTINGS_WIDTH, HEIGHT);
+    settingsGraphics.clear();
 
-    plot_x = SETTINGS_WIDTH;
-    plot_y = HEIGHT - PLOT_H;
+    modelParametersTitle = createDiv("Model parameters");
+    modelParametersTitle.addClass("section-title");
 
-    trail_graphics = createGraphics(SIMULATION_WINDOW_WIDTH, SIMULATION_WINDOW_HEIGHT);
-    trail_graphics.clear();
-    energy_graphics = createGraphics(PLOT_W, PLOT_H);
-    settings_graphics = createGraphics(SETTINGS_WIDTH, HEIGHT);
-    settings_graphics.clear();
+    trailParametersTitle = createDiv("Trail");
+    trailParametersTitle.addClass("section-title");
 
-    model_parametrs_title = createDiv("Model parameters");
-    model_parametrs_title.addClass("section-title");
+    mass1Slider = createSlider(0.1, 5, 1, 0.1);
+    mass2Slider = createSlider(0.1, 5, 1, 0.1);
+    length1Slider = createSlider(0.1, L_MAX / 100, 1, 0.1);
+    length2Slider = createSlider(0.1, L_MAX / 100, 1.5, 0.1);
+    gMultiplierSlider  = createSlider(0, 10, 1, 0.1);
+    speedSlider = createSlider(0.1, 5.0, 1.0, 0.1);
 
-    trail_parametrs_title = createDiv("Trail");
-    trail_parametrs_title.addClass("section-title");
+    styleUiSlider(mass1Slider);
+    styleUiSlider(mass2Slider);
+    styleUiSlider(length1Slider);
+    styleUiSlider(length2Slider);
+    styleUiSlider(gMultiplierSlider);
+    styleUiSlider(speedSlider);
 
-    m1_slider = createSlider(0.1, 5, 1, 0.1);
-    m2_slider = createSlider(0.1, 5, 1, 0.1);
-    l1_slider = createSlider(0.1, L_MAX / 100, 1, 0.1);
-    l2_slider = createSlider(0.1, L_MAX / 100, 1.5, 0.1);
-    g_slider  = createSlider(0, 10, 1, 0.1);
-    speed_slider = createSlider(0.1, 5.0, 1.0, 0.1);
+    mass1Label = createDiv('Mass 1');
+    mass2Label = createDiv('Mass 2');
+    length1Label = createDiv('Length 1');
+    length2Label = createDiv('Length 2');
+    gMultiplierLabel  = createDiv('Acceleration');
+    speedLabel  = createDiv('Speed');
 
-    styleUiSlider(m1_slider);
-    styleUiSlider(m2_slider);
-    styleUiSlider(l1_slider);
-    styleUiSlider(l2_slider);
-    styleUiSlider(g_slider);
-    styleUiSlider(speed_slider);
+    mass1ValueTag = createDiv();
+    mass2ValueTag = createDiv();
+    length1ValueTag = createDiv();
+    length2ValueTag = createDiv();
+    gMultiplierValueTag = createDiv();
+    speedValueTag = createDiv();
 
-    m1_label = createDiv('Mass 1');
-    m2_label = createDiv('Mass 2');
-    l1_label = createDiv('Length 1');
-    l2_label = createDiv('Length 2');
-    g_label  = createDiv('Acceleration');
-    speed_label  = createDiv('Speed');
+    styleUiLabel(mass1Label);
+    styleUiLabel(mass2Label);
+    styleUiLabel(length1Label);
+    styleUiLabel(length2Label);
+    styleUiLabel(gMultiplierLabel);
+    styleUiLabel(speedLabel);
 
-    m1_value_tag = createDiv();
-    m2_value_tag = createDiv();
-    l1_value_tag = createDiv();
-    l2_value_tag = createDiv();
-    g_value_tag = createDiv();
-    speed_value_tag = createDiv();
+    styleUiValueTag(mass1ValueTag);
+    styleUiValueTag(mass2ValueTag);
+    styleUiValueTag(length1ValueTag);
+    styleUiValueTag(length2ValueTag);
+    styleUiValueTag(gMultiplierValueTag);
+    styleUiValueTag(speedValueTag);
 
-    styleUiLabel(m1_label);
-    styleUiLabel(m2_label);
-    styleUiLabel(l1_label);
-    styleUiLabel(l2_label);
-    styleUiLabel(g_label);
-    styleUiLabel(speed_label);
+    divider1 = createDiv();
+    divider2 = createDiv();
+    divider3 = createDiv();
 
-    styleUiValueTag(m1_value_tag);
-    styleUiValueTag(m2_value_tag);
-    styleUiValueTag(l1_value_tag);
-    styleUiValueTag(l2_value_tag);
-    styleUiValueTag(g_value_tag);
-    styleUiValueTag(speed_value_tag);
+    divider1.addClass("section-divider");
+    divider2.addClass("section-divider");
+    divider3.addClass("section-divider");
 
-    divider_1 = createDiv();
-    divider_2 = createDiv();
-    divider_3 = createDiv();
+    clearTrailButton = createButton('Clear trail');
+    styleUiButtonTransparent(clearTrailButton, BTN_W, BTN_H);
+    clearTrailButton.mousePressed(() => trailGraphics.clear());
 
-    divider_1.addClass("section-divider");
-    divider_2.addClass("section-divider");
-    divider_3.addClass("section-divider");
+    trailCheckbox = createCheckbox('Show trail', true);
+    styleUiCheckbox(trailCheckbox);
 
-    trail_clear_button = createButton('Clear trail');
-    styleUiButtonTransparent(trail_clear_button, BTN_W, BTN_H);
-    trail_clear_button.mousePressed(() => trail_graphics.clear());
+    gradientCheckbox = createCheckbox('Gradient mode', true);
+    styleUiCheckbox(gradientCheckbox);
 
-    trail_checkbox = createCheckbox('Show trail', true);
-    styleUiCheckbox(trail_checkbox);
+    restartButton = createButton('Restart');
+    styleUiButton(restartButton, BTN_W, BTN_H);
+    restartButton.mousePressed(() => restartSimulation());
 
-    gradient_checkbox = createCheckbox('Gradient mode', true);
-    styleUiCheckbox(gradient_checkbox);
-
-    restart_button = createButton('Restart');
-    styleUiButton(restart_button, BTN_W, BTN_H);
-    restart_button.mousePressed(() => restartSimulation());
-
-    pause_button = createButton('Pause');
-    styleUiButtonAccent(pause_button, BTN_W, BTN_H);
-    pause_button.mousePressed(() => {
+    pauseButton = createButton('Pause');
+    styleUiButtonAccent(pauseButton, BTN_W, BTN_H);
+    pauseButton.mousePressed(() => {
         paused = !paused;
-        pause_button.html(paused ? 'Resume' : 'Pause');
+        pauseButton.html(paused ? 'Resume' : 'Pause');
     });
 
     // Позже сделаю отрисовку, как для предыдущего блока
     let settings_x = 14;
     let settings_y = 655; 
 
-    settings_button = createButton('Change start parametrs');
-    styleUiButtonTransparent(settings_button);
-    settings_button.style('text-align', 'left');
-    settings_button.style('padding-left', '1px');
-    settings_button.size(BTN_W + 20, BTN_H + 20);
-    settings_button.position(settings_x - 3, settings_y);
-    settings_button.mousePressed(settingsHandler);
+    settingsButton = createButton('Change start parametrs');
+    styleUiButtonTransparent(settingsButton);
+    settingsButton.style('text-align', 'left');
+    settingsButton.style('padding-left', '1px');
+    settingsButton.size(BTN_W + 20, BTN_H + 20);
+    settingsButton.position(settings_x - 3, settings_y);
+    settingsButton.mousePressed(settingsHandler);
 
-    ok_button = createButton('OK');
-    ok_button.position(settings_x + 3, settings_y + 120);
-    ok_button.mousePressed(applySettings);
-    ok_button.hide();
+    okButton = createButton('OK');
+    okButton.position(settings_x + 3, settings_y + 120);
+    okButton.mousePressed(applySettings);
+    okButton.hide();
 
-    cancel_button = createButton('Cancel');
-    cancel_button.position(settings_x + 42, settings_y + 120);
-    cancel_button.mousePressed(cancelSettings);
-    cancel_button.hide();
+    cancelButton = createButton('Cancel');
+    cancelButton.position(settings_x + 42, settings_y + 120);
+    cancelButton.mousePressed(cancelSettings);
+    cancelButton.hide();
 
-    fi1_label = createDiv('fi1:');
-    fi1_label.position(settings_x, settings_y);
-    fi1_label.style('color', 'white');
-    fi1_label.hide();
+    phi1Label = createDiv('phi1:');
+    phi1Label.position(settings_x, settings_y);
+    phi1Label.style('color', 'white');
+    phi1Label.hide();
 
-    fi1_input = createInput(start_fi1.toFixed(2));
-    fi1_input.position(settings_x + 35, settings_y);
-    fi1_input.size(60);
-    fi1_input.hide();
+    phi1Input = createInput(startPhi1.toFixed(2));
+    phi1Input.position(settings_x + 35, settings_y);
+    phi1Input.size(60);
+    phi1Input.hide();
 
-    fi2_label = createDiv('fi2:');
-    fi2_label.position(settings_x, settings_y + 30);
-    fi2_label.style('color', 'white');
-    fi2_label.hide();
+    phi2Label = createDiv('phi2:');
+    phi2Label.position(settings_x, settings_y + 30);
+    phi2Label.style('color', 'white');
+    phi2Label.hide();
 
-    fi2_input = createInput(start_fi2.toFixed(2));
-    fi2_input.position(settings_x + 35, settings_y + 30);
-    fi2_input.size(60);
-    fi2_input.hide();
+    phi2Input = createInput(startPhi2.toFixed(2));
+    phi2Input.position(settings_x + 35, settings_y + 30);
+    phi2Input.size(60);
+    phi2Input.hide();
 
-    w1_label = createDiv('w1:');
-    w1_label.position(settings_x, settings_y + 60);
-    w1_label.style('color', 'white');
-    w1_label.hide();
+    omega1Label = createDiv('omega1:');
+    omega1Label.position(settings_x, settings_y + 60);
+    omega1Label.style('color', 'white');
+    omega1Label.hide();
 
-    w1_input = createInput(start_w1.toFixed(2));
-    w1_input.position(settings_x + 35, settings_y + 60);
-    w1_input.size(60);
-    w1_input.hide();
+    omega1Input = createInput(startOmega1.toFixed(2));
+    omega1Input.position(settings_x + 35, settings_y + 60);
+    omega1Input.size(60);
+    omega1Input.hide();
 
-    w2_label = createDiv('w2:');
-    w2_label.position(settings_x, settings_y + 90);
-    w2_label.style('color', 'white');
-    w2_label.hide();
+    omega2Label = createDiv('omega2:');
+    omega2Label.position(settings_x, settings_y + 90);
+    omega2Label.style('color', 'white');
+    omega2Label.hide();
 
-    w2_input = createInput(start_w2.toFixed(2));
-    w2_input.position(settings_x + 35, settings_y + 90);
-    w2_input.size(60);
-    w2_input.hide();
+    omega2Input = createInput(startOmega2.toFixed(2));
+    omega2Input.position(settings_x + 35, settings_y + 90);
+    omega2Input.size(60);
+    omega2Input.hide();
 
     layoutSidebar();
 }
 
 function draw() {
     background(39, 42, 47, 255);
-    settings_graphics.background(28, 33, 39, 255);
-    image(settings_graphics, 0, 0);
+    settingsGraphics.background(28, 33, 39, 255);
+    image(settingsGraphics, 0, 0);
 
     textFont('Inter');
 
-    m1 = m1_slider.value();
-    m2 = m2_slider.value();
-    l1 = l1_slider.value() * 100;
-    l2 = l2_slider.value() * 100;
-    g = g_slider.value() * G;
+    mass1 = mass1Slider.value();
+    mass2 = mass2Slider.value();
+    length1 = length1Slider.value() * 100;
+    length2 = length2Slider.value() * 100;
+    gMultiplier = gMultiplierSlider.value();
+    gravity = gMultiplier * G;
 
     // Сохранение координат 2-й массы
-    let ex_x2 = x2;
-    let ex_y2 = y2;
+    let prevMass2X = mass2X;
+    let prevMass2Y = mass2Y;
 
     calculateCoordinates();
 
     // Отрисовка траектории движения
-    if (gradient_checkbox.checked()) {
-        let trail_colour = getTrailColor();
-        trail_graphics.stroke(trail_colour * 16, trail_colour * 4, trail_colour, 255);}
-    else {trail_graphics.stroke(255, 100, 0, 100);}
-    trail_graphics.strokeWeight(1);
-    trail_graphics.line(ex_x2 - SETTINGS_WIDTH, ex_y2, x2 - SETTINGS_WIDTH, y2); // траектория движения 2-й массы
-    if (trail_checkbox.checked()) {image(trail_graphics, SETTINGS_WIDTH, 0);}
+    if (gradientCheckbox.checked()) {
+        let trailColor = getTrailColor();
+        trailGraphics.stroke(trailColor * 16, trailColor * 4, trailColor, 255);}
+    else {trailGraphics.stroke(255, 100, 0, 100);}
+    trailGraphics.strokeWeight(1);
+    trailGraphics.line(prevMass2X - SETTINGS_WIDTH, prevMass2Y, mass2X - SETTINGS_WIDTH, mass2Y); // траектория движения 2-й массы
+    if (trailCheckbox.checked()) {image(trailGraphics, SETTINGS_WIDTH, 0);}
 
     // Отрисовка маятника
     stroke(120);
-    line(ORIGIN_X, ORIGIN_Y, x1, y1);
-    line(x1, y1, x2, y2);
+    line(ORIGIN_X, ORIGIN_Y, mass1X, mass1Y);
+    line(mass1X, mass1Y, mass2X, mass2Y);
     
     stroke(255);
     fill(255);
     circle(ORIGIN_X, ORIGIN_Y, 3);
-    circle(x1, y1, Math.sqrt(m1) * 10);
-    circle(x2, y2, Math.sqrt(m2) * 10);
+    circle(mass1X, mass1Y, Math.sqrt(mass1) * 10);
+    circle(mass2X, mass2Y, Math.sqrt(mass2) * 10);
 
     // Расчет и сохранение значений энергий
     let energies = calculateEnergies();
-    energy_max = Math.max(energy_max, energies.max);
-    energy_history.push(energies);
-    if (energy_history.length > max_history) {
-        let removed = energy_history.shift();
-        if (removed.max >= energy_max) {
-            energy_max = 0;
-            for (let e of energy_history) {
-                energy_max = Math.max(energy_max, e.max);
+    energyMax = Math.max(energyMax, energies.max);
+    ENERGY_HISTORY.push(energies);
+    if (ENERGY_HISTORY.length > MAX_HISTORY) {
+        let removed = ENERGY_HISTORY.shift();
+        if (removed.max >= energyMax) {
+            energyMax = 0;
+            for (let e of ENERGY_HISTORY) {
+                energyMax = Math.max(energyMax, e.max);
             }
         }
     }
@@ -783,9 +845,9 @@ function draw() {
 
     // Нахождение следующего состояния системы
     if (!paused) {
-        const timeScale = Number(speed_slider.value());
+        const timeScale = Number(speedSlider.value());
         const subSteps = Math.ceil(timeScale);
-        const dtStep = dt * timeScale / subSteps;
+        const dtStep = DT * timeScale / subSteps;
 
         for (let i = 0; i < subSteps; i++) {
             rk4(dtStep);
