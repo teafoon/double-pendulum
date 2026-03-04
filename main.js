@@ -42,34 +42,120 @@ let gradient_checkbox; // Галочки режима с траекторией,
 let energy_graphics; // Поверхность для отрисовки графика зависимости энергии от времени
 let plot_x, plot_y; // Координаты графика зависимости энергии от времени
 let paused = false;
+let model_parametrs_title, trail_parametrs_title;
+let divider_1, divider_2;
+let m1_label, m2_label, l1_label, l2_label, g_label;
+let trail_clear_button;
+let restart_button, pause_button;
 
 
-function stylePaintedButton(btn, wdth, hght) {
-  btn.size(wdth, hght);
-  btn.style('box-sizing', 'border-box');
-  btn.style('font-family', 'Inter, sans-serif');
-  btn.style('font-weight', '600');
-  btn.style('font-size', '12px');
+function styleUiButton(btn, w = BTN_W, h = BTN_H) { // Функция кастомизации кнопки
+    btn.size(w, h);
+    btn.style('box-sizing', 'border-box');
+    btn.style('font-family', 'Inter, sans-serif');
+    btn.style('font-weight', '600');
+    btn.style('font-size', '12px');
+    btn.style('background-color', '#2b3440');
+    btn.style('color', '#ffffff');
+    btn.style('border', '0px solid #3a4553');
+    btn.style('border-radius', '6px');
+    btn.style('cursor', 'pointer');
 
-  btn.style('background-color', '#2b3440');
-  btn.style('color', '#ffffff');
-  btn.style('border', '1px solid #3a4553');
-  btn.style('border-radius', '6px');
-  btn.style('cursor', 'pointer');
+    btn.mouseOver(() => btn.style('background-color', '#3a4553'));
+    btn.mouseOut(() => btn.style('background-color', '#2b3440'));
 }
 
-function styleTransperentButton(btn, wdth, hght) {
-  btn.size(wdth, hght);
-  btn.style('box-sizing', 'border-box');
-  btn.style('font-family', 'Inter, sans-serif');
-  btn.style('font-weight', '600');
-  btn.style('font-size', '12px');
+function styleUiLabel(div) { // Функция кастомизации подписи слайдеров
+    div.style('color', 'white');
+    div.style('font-family', 'Inter, sans-serif');
+    div.style('font-size', '14px');
+    div.style('font-weight', '350');
+}
 
-  btn.style('background-color', '#2b3440');
-  btn.style('color', '#ffffff');
-  btn.style('border', '1px solid #3a4553');
-  btn.style('border-radius', '6px');
-  btn.style('cursor', 'pointer');
+function layoutSidebar() {
+
+    // Основные параметры панели настроек
+    const PAD = 14;                 // внутренний отступ панели от левого и верхнего края
+    const TITLE_GAP = 50;           // расстояние от заголовка секции до первого элемента секции
+    const LABEL_TO_SLIDER = 10;     // расстояние между подписью параметра и самим слайдером
+    const ROW_GAP = 40;             // вертикальное расстояние между слайдерами
+    const CHECKBOX_GAP = TITLE_GAP - 18; // расстояние между чекбоксами в блоке Trail
+    const DIVIDER_GAP = 14;         // отступ сверху и снизу от линии-разделителя
+
+    // Базовые параметры для позиционирования элементов
+    const x = PAD;                          // базовая координата X для всех элементов панели
+    const w = settings_width - PAD * 2;     // рабочая ширина элементов панели (с учётом отступов)
+
+    let y = 0; // "курсор" текущей вертикальной позиции (двигается сверху вниз по мере добавления элементов)
+
+    function placeTitle(title) {// Функция размещения заголовка секции
+        title.position(x, y);
+        y += TITLE_GAP;
+    }
+
+    function placeDivider(divider) { // Функция размещения линии-разделителя
+        y += DIVIDER_GAP;
+        divider.position(0, y);
+        divider.size(settings_width, 2);
+        y += DIVIDER_GAP;
+    }
+
+    function placeLabeledSlider(label, slider) { // Функция размещения пары "подпись + слайдер"
+
+        // подпись параметра
+        label.position(x + 2, y);
+
+        // смещение вниз до слайдера
+        y += LABEL_TO_SLIDER + 8;
+
+        // сам слайдер
+        slider.position(x, y);
+        slider.size(w);
+
+        // переход к следующей строке параметров
+        y += ROW_GAP;
+    }
+
+
+    // Блок настройки основных параметров системы (Model parameters)
+    placeTitle(model_parametrs_title);
+
+    placeLabeledSlider(m1_label, m1_slider);
+    placeLabeledSlider(m2_label, m2_slider);
+    placeLabeledSlider(l1_label, l1_slider);
+    placeLabeledSlider(l2_label, l2_slider);
+    placeLabeledSlider(g_label,  g_slider);
+
+    y -= ROW_GAP - 6;
+
+    placeDivider(divider_1);
+
+    // Блок настройки траектории (Trail)
+    placeTitle(trail_parametrs_title);
+
+    // Кнопка очистки траектории
+    // располагается справа от заголовка секции
+    trail_clear_button.position(
+        x + w - BTN_W,
+        y - TITLE_GAP + BTN_H - 9
+    );
+
+    // Чекбокс отображения траектории
+    trail_checkbox.position(x - 2, y);
+    y += CHECKBOX_GAP;
+
+    // Чекбокс режима градиента
+    gradient_checkbox.position(x - 2, y);
+    y += 6;
+
+    placeDivider(divider_2);
+
+
+    // Блок настройки НУ (начальных условий)
+
+    // Кнопки Restart и Pause
+    restart_button.position(x, y + BTN_H);
+    pause_button.position(x + BTN_W + 10, y + BTN_H);
 }
 
 function calculateCoordinates() { // Вычисление координат масс
@@ -310,153 +396,99 @@ function cancelSettings() {
 }
 
 function setup() { // Отрисовка интерфейса
-    // Координаты блока с параметрами симуляции
-    let parametres_x = 20;
-    let parametres_y = 20;
-
     plot_x = settings_width;
     plot_y = height - plot_h;
 
     createCanvas(width, height);
+
     trail_graphics = createGraphics(simulation_window_size, simulation_window_size);
     trail_graphics.clear();
     energy_graphics = createGraphics(plot_w, plot_h);
     settings_graphics = createGraphics(settings_width, height);
     settings_graphics.clear();
 
-    let model_parametrs_title = createDiv("Model parameters");
+    model_parametrs_title = createDiv("Model parameters");
     model_parametrs_title.addClass("section-title");
-    model_parametrs_title.position(parametres_x + 2, parametres_y - 20);
 
-    // Создание слайдеров (ползунков)
-    m1_slider = createSlider(10, 500, 100, 10); // (min, max, initial, step)
+    trail_parametrs_title = createDiv("Trail");
+    trail_parametrs_title.addClass("section-title");
+
+    m1_slider = createSlider(10, 500, 100, 10);
     m2_slider = createSlider(10, 500, 100, 10);
     l1_slider = createSlider(10, l_max, 100, 10);
     l2_slider = createSlider(10, l_max, 150, 10);
-    g_slider = createSlider(0, 100, 10, 1);
+    g_slider  = createSlider(0, 100, 10, 1);
 
-    // Размещение слайдеров
-    let slider_gap = 55;
-    let slider_width = settings_width - parametres_x * 2;
+    m1_label = createDiv('Mass 1: ' + m1_slider.value());
+    m2_label = createDiv('Mass 2: ' + m2_slider.value());
+    l1_label = createDiv('Length 1: ' + l1_slider.value());
+    l2_label = createDiv('Length 2: ' + l2_slider.value());
+    g_label  = createDiv('g: ' + g_slider.value());
 
-    m1_slider.position(parametres_x, parametres_y + slider_gap);
-    m2_slider.position(parametres_x, parametres_y + slider_gap * 2);
-    l1_slider.position(parametres_x, parametres_y + slider_gap * 3);
-    l2_slider.position(parametres_x, parametres_y + slider_gap * 4);
-    g_slider.position(parametres_x, parametres_y + slider_gap * 5);
+    styleUiLabel(m1_label);
+    styleUiLabel(m2_label);
+    styleUiLabel(l1_label);
+    styleUiLabel(l2_label);
+    styleUiLabel(g_label);
 
-    m1_slider.size(slider_width);
-    m2_slider.size(slider_width);
-    l1_slider.size(slider_width);
-    l2_slider.size(slider_width);
-    g_slider.size(slider_width);
-
-    // Подписи для слайдеров
-    let m1_label = createDiv('Mass 1: ' + m1_slider.value());
-    m1_label.position(parametres_x + 2, parametres_y + slider_gap - 25);
     m1_slider.input(() => m1_label.html('Mass 1: ' + m1_slider.value()));
-    m1_label.style('color', 'white');
-
-    let m2_label = createDiv('Mass 2: ' + m2_slider.value());
-    m2_label.position(parametres_x + 2, parametres_y + slider_gap * 2 - 25);
     m2_slider.input(() => m2_label.html('Mass 2: ' + m2_slider.value()));
-    m2_label.style('color', 'white');
-
-    let l1_label = createDiv('Length 1: ' + l1_slider.value());
-    l1_label.position(parametres_x + 2, parametres_y + slider_gap * 3 - 25);
     l1_slider.input(() => l1_label.html('Length 1: ' + l1_slider.value()));
-    l1_label.style('color', 'white');
-
-    let l2_label = createDiv('Length 2: ' + l2_slider.value());
-    l2_label.position(parametres_x + 2, parametres_y + slider_gap * 4 - 25);
     l2_slider.input(() => l2_label.html('Length 2: ' + l2_slider.value()));
-    l2_label.style('color', 'white');
-
-    let g_label = createDiv('g: ' + g_slider.value());
-    g_label.position(parametres_x + 2, parametres_y + slider_gap * 5 - 25);
     g_slider.input(() => g_label.html('g: ' + g_slider.value()));
-    g_label.style('color', 'white');
 
-    let divider_1 = createDiv();
+    divider_1 = createDiv();
     divider_1.addClass("section-divider");
-    divider_1.size(settings_width);
-    divider_1.position(0, parametres_y + slider_gap * 5.5);
 
-    let trail_settings_y = parametres_y + slider_gap * 6 + 10; // Координата начала блока настроек таректории
-    let checkbox_gap = 35; // Расстояние между "галочками" в настройках траектории
+    divider_2 = createDiv();
+    divider_2.addClass("section-divider");
 
-    let trail_parametrs_title = createDiv("Trail");
-    trail_parametrs_title.addClass("section-title");
-    trail_parametrs_title.position(parametres_x + 2, trail_settings_y - 15);
+    trail_clear_button = createButton('Clear trail');
+    styleUiButton(trail_clear_button, BTN_W, BTN_H);
+    trail_clear_button.mousePressed(() => trail_graphics.clear());
 
-    // Кнопка для удаления траектории движения
-    let trail_clear_button = createButton('Clear trail');
-    trail_clear_button.position(settings_width - 90, trail_settings_y);
-    trail_clear_button.size(BTN_W, BTN_H);
-    trail_clear_button.mousePressed(() => {trail_graphics.clear();});
-
-    // Создание галочки для отрисовки траектории движения
     trail_checkbox = createCheckbox('Show trail', true);
-    trail_checkbox.position(parametres_x - 2, trail_settings_y + checkbox_gap + 4);
     trail_checkbox.style('color', 'white');
 
-    // Создание галочки жерима с траекторией, характеризующей скорость массы
     gradient_checkbox = createCheckbox('Gradient mode', true);
-    gradient_checkbox.position(parametres_x - 2, trail_settings_y + checkbox_gap * 2 + 4);
     gradient_checkbox.style('color', 'white');
 
-    let divider_2 = createDiv();
-    divider_2.addClass("section-divider");
-    divider_2.size(settings_width);
-    divider_2.position(0, trail_settings_y + checkbox_gap * 3 - 4);
+    restart_button = createButton('Restart');
+    styleUiButton(restart_button, BTN_W, BTN_H);
+    restart_button.mousePressed(() => restartSimulation());
 
-    let controls_y = trail_settings_y + checkbox_gap * 4 + 5;
-
-    // Кнопка для возврата системы в начальное положение
-    let restart_button = createButton('Restart');
-    restart_button.position(parametres_x, controls_y);
-    restart_button.mousePressed(() => {
-        restartSimulation();
-    });
-
-    // Кнопка паузы
-    let pause_button = createButton('Pause');
-    pause_button.position(parametres_x + 80, controls_y);
+    pause_button = createButton('Pause');
+    styleUiButton(pause_button, BTN_W, BTN_H);
     pause_button.mousePressed(() => {
         paused = !paused;
         pause_button.html(paused ? 'Resume' : 'Pause');
     });
 
-    // Координаты блока с настройками симуляции
     let settings_x = 50;
-    let settings_y = height- 180;
+    let settings_y = height - 180;
 
-    // Кнопка настроек
     settings_button = createButton('Change start parametrs');
     settings_button.position(settings_x, settings_y);
     settings_button.size(BTN_W + 20, BTN_H + 20);
     settings_button.mousePressed(settingsHandler);
 
-    // Кнопка "OK"
     ok_button = createButton('OK');
     ok_button.position(settings_x + 3, settings_y + 120);
     ok_button.mousePressed(applySettings);
     ok_button.hide();
 
-    // Кнопка отмены изменений
     cancel_button = createButton('Cancel');
-    cancel_button.position(settings_x + 42, settings_y + 120)
+    cancel_button.position(settings_x + 42, settings_y + 120);
     cancel_button.mousePressed(cancelSettings);
     cancel_button.hide();
 
-    // Поля ввода и подписи к ним
     fi1_label = createDiv('fi1:');
     fi1_label.position(settings_x, settings_y);
     fi1_label.style('color', 'white');
     fi1_label.hide();
 
     fi1_input = createInput(start_fi1.toFixed(2));
-    fi1_input.position(settings_x + 30, settings_y);
+    fi1_input.position(settings_x + 35, settings_y);
     fi1_input.size(60);
     fi1_input.hide();
 
@@ -466,7 +498,7 @@ function setup() { // Отрисовка интерфейса
     fi2_label.hide();
 
     fi2_input = createInput(start_fi2.toFixed(2));
-    fi2_input.position(settings_x + 30, settings_y + 30);
+    fi2_input.position(settings_x + 35, settings_y + 30);
     fi2_input.size(60);
     fi2_input.hide();
 
@@ -475,8 +507,8 @@ function setup() { // Отрисовка интерфейса
     w1_label.style('color', 'white');
     w1_label.hide();
 
-    w1_input = createInput(start_w1.toString());
-    w1_input.position(settings_x + 30, settings_y + 60);
+    w1_input = createInput(start_w1.toFixed(2));
+    w1_input.position(settings_x + 35, settings_y + 60);
     w1_input.size(60);
     w1_input.hide();
 
@@ -485,12 +517,12 @@ function setup() { // Отрисовка интерфейса
     w2_label.style('color', 'white');
     w2_label.hide();
 
-    w2_input = createInput(start_w2.toString());
-    w2_input.position(settings_x + 30, settings_y + 90);
+    w2_input = createInput(start_w2.toFixed(2));
+    w2_input.position(settings_x + 35, settings_y + 90);
     w2_input.size(60);
     w2_input.hide();
 
-    calculateCoordinates();
+    layoutSidebar();
 }
 
 function draw() {
