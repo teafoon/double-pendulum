@@ -41,19 +41,6 @@ visualizes:
 
 ------------------------------------------------------------------------
 
-## Controls
-
-  Control       Description
-  ------------- --------------------------------------------
-  Start         Start the simulation
-  Pause         Pause the simulation
-  Restart       Reset the system with current parameters
-  Clear trail   Remove the trajectory trace
-  Inputs        Set masses, lengths, angles and velocities
-  Speed         Adjust the simulation speed
-
-------------------------------------------------------------------------
-
 ## Implementation
 
 The simulation uses:
