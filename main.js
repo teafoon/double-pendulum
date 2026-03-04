@@ -27,7 +27,7 @@ let mass2X, mass2Y;         // Координаты 2-й массы
 
 // Параметры симуляции
 const PX_PER_METER = 100;
-const DT = 0.01;                 // Шаг интегрирования (с) (точность симуляции)
+const DT = 0.005;                // Шаг интегрирования (с) (точность симуляции)
 const MAX_FRAME_TIME = 0.1;      // Защита от больших скачков времени (например, вкладка подвисла) (с)
 const MAX_STEPS_PER_FRAME = 500; // Защита от бесконечного while при сильных лагах
 let simAccumulator = 0;          // Накопитель "долга" по времени симуляции в секундах (с)
@@ -692,7 +692,7 @@ function setup() { // Отрисовка интерфейса
     length1Slider = createSlider(0.1, L_MAX / PX_PER_METER, 1, 0.1);
     length2Slider = createSlider(0.1, L_MAX / PX_PER_METER, 1.5, 0.1);
     gMultiplierSlider  = createSlider(0, 10, 1, 0.1);
-    speedSlider = createSlider(0.1, 10, 1, 0.1);
+    speedSlider = createSlider(0.1, 5, 1, 0.1);
 
     styleUiSlider(mass1Slider);
     styleUiSlider(mass2Slider);
@@ -865,17 +865,21 @@ function draw() {
 
     // Нахождение следующего состояния системы
     if (!paused) {
+        const frameSec = Math.min(deltaTime / 1000, MAX_FRAME_TIME);
         const timeScale = Number(speedSlider.value());
-        const frameSec = Math.min(deltaTime / 1000, MAX_FRAME_TIME); // deltaTime в p5.js — миллисекунды между кадрами
-        simAccumulator += frameSec * timeScale;
 
+        simAccumulator += frameSec * timeScale; // сколько сим-времени надо "прожить"
+
+        const MAX_STEP = 0.005; // максимальный шаг интегрирования (сек)
         let steps = 0;
-        while (simAccumulator >= DT && steps < MAX_STEPS_PER_FRAME) {
-            rk4(DT);               // фиксированный шаг физики
-            simAccumulator -= DT;
+
+        while (simAccumulator > 0 && steps < MAX_STEPS_PER_FRAME) {
+             const h = Math.min(MAX_STEP, simAccumulator);
+             rk4(h);
+            simAccumulator -= h;
             steps++;
         }
 
-        if (steps === MAX_STEPS_PER_FRAME) simAccumulator = 0; // если лаги совсем большие
+        if (steps >= MAX_STEPS_PER_FRAME) simAccumulator = 0;
     }
 }
