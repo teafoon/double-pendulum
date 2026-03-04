@@ -5,9 +5,9 @@ chaotic motion and energy dynamics.\
 The simulation is written in **JavaScript using p5.js** and runs
 entirely in the browser.
 
-**[Demo](https://teafoon.github.io/double-pendulum/)**
-
 ![Double Pendulum Simulation](assets/screenshot.png)
+
+**[Demo](https://teafoon.github.io/double-pendulum/)**
 
 ------------------------------------------------------------------------
 
@@ -47,7 +47,7 @@ visualizes:
 The simulation uses:
 
 -   **p5.js** for rendering
--   **Runge--Kutta 4th order (RK4)** for numerical integration
+-   **Runge-Kutta 4th order (RK4)** for numerical integration
 -   fixed timestep simulation
 -   energy tracking for verification of physical correctness
 
