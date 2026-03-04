@@ -1,4 +1,5 @@
 // Курсовая работа на тему "Симуляция двойного маятника"
+// Автор: Шамсиев Тимур, 213 группа физического факульта МГУ
 
 // Физика
 const G = 9.81; // Ускорение свободного падения (м/с^2)
@@ -27,7 +28,7 @@ let mass2X, mass2Y;         // Координаты 2-й массы
 
 // Параметры симуляции
 const PX_PER_METER = 100;
-const DT = 0.005;                // Шаг интегрирования (с) (точность симуляции)
+const DT = 0.0001;                // Шаг интегрирования (с) (точность симуляции)
 const MAX_FRAME_TIME = 0.1;      // Защита от больших скачков времени (например, вкладка подвисла) (с)
 const MAX_STEPS_PER_FRAME = 500; // Защита от бесконечного while при сильных лагах
 let simAccumulator = 0;          // Накопитель "долга" по времени симуляции в секундах (с)
@@ -236,74 +237,77 @@ function injectSliderCss() {
 }
 
 function styleUiValueTag(tag) {
-  tag.style('font-family', 'Inter, sans-serif');
-  tag.style('font-size', '11px');
-  tag.style('font-weight', '600');
-  tag.style('color', '#ffffff');
-  tag.style('background', '#2b3440');
-  tag.style('border', '1px solid #3a4553');
-  tag.style('border-radius', '999px');
-  tag.style('padding', '2px 6px');
-  tag.style('pointer-events', 'none'); // чтобы не мешала тянуть слайдер
-  tag.style('user-select', 'none');
-  tag.style('white-space', 'nowrap');
+    tag.style('font-family', 'Inter, sans-serif');
+    tag.style('font-size', '11px');
+    tag.style('font-weight', '600');
+    tag.style('color', '#ffffff');
+    tag.style('background', '#2b3440');
+    tag.style('border', '1px solid #3a4553');
+    tag.style('border-radius', '999px');
+    tag.style('padding', '2px 6px');
+    tag.style('pointer-events', 'none'); // чтобы не мешала тянуть слайдер
+    tag.style('user-select', 'none');
+    tag.style('white-space', 'nowrap');
+    tag.style('position', 'absolute');
+    tag.style('display', 'inline-block');
 }
 
 function styleUiSlider(slider, {
-  track = '#3a4553',       // цвет полосы (фон)
-  fill  = '#0060DF',       // цвет “залитой” части до кружка
-  thumb = '#0060DF',       // цвет кружка
-  thumbBorder = '#1C2127'  // обводка кружка (красиво на тёмном фоне)
-} = {}) {
+    track = '#3a4553',       // цвет полосы (фон)
+    fill  = '#0060DF',       // цвет “залитой” части до кружка
+    thumb = '#0060DF',       // цвет кружка
+    thumbBorder = '#1C2127'  // обводка кружка (красиво на тёмном фоне)
+    } = {}) {
 
-  slider.addClass('ui-slider');
-  slider.style('--ui-track', track);
-  slider.style('--ui-fill', fill);
-  slider.style('--ui-thumb', thumb);
-  slider.style('--ui-thumb-border', thumbBorder);
+    slider.addClass('ui-slider');
+    slider.style('--ui-track', track);
+    slider.style('--ui-fill', fill);
+    slider.style('--ui-thumb', thumb);
+    slider.style('--ui-thumb-border', thumbBorder);
 
-  // Для Chrome/Edge/Safari: двигаем процент заливки
-  const updatePct = () => {
-    const min = Number(slider.elt.min);
-    const max = Number(slider.elt.max);
-    const val = Number(slider.value());
-    const pct = ((val - min) * 100) / (max - min);
-    slider.elt.style.setProperty('--ui-pct', `${pct}%`);
-  };
+    // Для Chrome/Edge/Safari: двигаем процент заливки
+    const updatePct = () => {
+        const min = Number(slider.elt.min);
+        const max = Number(slider.elt.max);
+        const val = Number(slider.value());
+        const pct = ((val - min) * 100) / (max - min);
+        slider.elt.style.setProperty('--ui-pct', `${pct}%`);
+    };
 
-  updatePct();
-  slider.input(updatePct)
+    updatePct();
+    slider.elt.addEventListener('input', updatePct);
+    slider.elt.addEventListener('change', updatePct);
 }
 
-function attachFloatingSliderValue(slider, tag, {
-  x, y, w,
-  format = (v) => v
-} = {}) {
-  const update = () => {
-    const min = Number(slider.elt.min);
-    const max = Number(slider.elt.max);
-    const val = Number(slider.value());
-    const thumbW = FONT_SIZE;
-    const yOffset = FONT_SIZE + 10;
+function attachFloatingSliderValue(slider, tag,
+    { x, y, w, format = (v) => v } = {}) {
+    const update = () => {
+        const min = Number(slider.elt.min);
+        const max = Number(slider.elt.max);
+        const val = Number(slider.value());
+        const thumbW = FONT_SIZE;
+        const yOffset = FONT_SIZE + 10;
 
-    const pct = (val - min) / (max - min);
-    tag.html(format(val));
+        const pct = (val - min) / (max - min);
+        tag.html(format(val));
 
-    // Ширина тега для аккуратного центрирования
-    const tagW = tag.elt.getBoundingClientRect().WIDTH || 0;
+        // Ширина тега для аккуратного центрирования
+        const tagW = tag.elt.offsetWidth || tag.elt.getBoundingClientRect().width || 0;
 
-    // Позиция центра thumb по X
-    const centerX = x + pct * (w - thumbW) - thumbW / 2;
+        // Позиция центра thumb по X
+        const centerX = x + pct * (w - thumbW) + thumbW / 2 + 2;
 
-    // Чтобы подпись не вылезала за края
-    const leftClamped = Math.min(x + w - tagW / 2, Math.max(x + tagW / 2, centerX));
+        // Чтобы подпись не вылезала за края
+        const leftClamped = Math.min(x + w - tagW / 2, Math.max(x + tagW / 2, centerX));
 
-    tag.position(leftClamped - tagW / 2, y + yOffset);
-  };
+        tag.position(leftClamped - tagW / 2, y + yOffset);
+    };
 
-  update();
-  slider.input(update);
-  return update;
+    update();
+    requestAnimationFrame(update);
+    slider.elt.addEventListener('input', update);
+    slider.elt.addEventListener('change', update);
+    return update;
 }
 
 function layoutSidebar() {
@@ -870,11 +874,9 @@ function draw() {
 
         simAccumulator += frameSec * timeScale; // сколько сим-времени надо "прожить"
 
-        const MAX_STEP = 0.005; // максимальный шаг интегрирования (сек)
         let steps = 0;
-
         while (simAccumulator > 0 && steps < MAX_STEPS_PER_FRAME) {
-             const h = Math.min(MAX_STEP, simAccumulator);
+             const h = Math.min(DT, simAccumulator);
              rk4(h);
             simAccumulator -= h;
             steps++;
