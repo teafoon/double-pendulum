@@ -45,7 +45,8 @@ const PLOT_X = SETTINGS_WIDTH;                            // Координат�
 const PLOT_Y = HEIGHT - PLOT_H;                           // Координата Y графика энергии
 const ORIGIN_X = SIMULATION_WINDOW_WIDTH / 2 + SETTINGS_WIDTH; // Координата X точки подвеса
 const ORIGIN_Y = SIMULATION_WINDOW_HEIGHT / 2;                 // Координата Y точки подвеса
-const L_MAX = Math.min(SIMULATION_WINDOW_HEIGHT, SIMULATION_WINDOW_WIDTH) / 4; // Максимальная длина плеча маятника
+const L_MAX = Math.min(SIMULATION_WINDOW_HEIGHT, SIMULATION_WINDOW_WIDTH) / 4 -
+    (Math.min(SIMULATION_WINDOW_HEIGHT, SIMULATION_WINDOW_WIDTH) / 4) % 10; // Максимальная длина плеча маятника
 
 // Элементы интерфейса
 const BTN_W = 80; // Длина кнопок
