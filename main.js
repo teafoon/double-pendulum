@@ -6,9 +6,9 @@ const G = 9.81; // Ускорение свободного падения (м/с
 // Параметры системы (задаются слайдерами)
 let mass1;       // Масса 1-й массы (кг)
 let mass2;       // Масса 2-й массы (кг)
-let length1;     // Длина 1-го плеча (условные единицы)
-let length2;     // Длина 2-го плеча (условные единицы)
-let gMultiplier; // Множитель gravity (в единицах gravity)
+let length1;     // Длина 1-го плеча (м)
+let length2;     // Длина 2-го плеча (м)
+let gMultiplier; // Множитель gravity (в единицах g)
 let gravity;     // Текущее ускорение свободного падения с учётом множителя (м/с^2)
 
 // Начальные условия
@@ -26,7 +26,10 @@ let mass1X, mass1Y;         // Координаты 1-й массы
 let mass2X, mass2Y;         // Координаты 2-й массы
 
 // Параметры симуляции
-const DT = 0.05; // Точность симуляции (шаг интегрирования)
+const DT = 0.01;                 // Шаг интегрирования (с) (точность симуляции)
+const MAX_FRAME_TIME = 0.1;      // Защита от больших скачков времени (например, вкладка подвисла) (с)
+const MAX_STEPS_PER_FRAME = 500; // Защита от бесконечного while при сильных лагах
+let simAccumulator = 0;          // Накопитель "долга" по времени симуляции в секундах (с)
 
 // Интерфейс (размеры и расположение)
 const SETTINGS_WIDTH = 200; // Ширина блока настроек
@@ -440,6 +443,7 @@ function restartSimulation() {
     trailGraphics.clear();
     ENERGY_HISTORY.length = 0;
     energyMax = 0;
+    simAccumulator = 0;
 }
 
 function computeDerivatives(phi1, phi2, omega1, omega2) {
@@ -687,7 +691,7 @@ function setup() { // Отрисовка интерфейса
     length1Slider = createSlider(0.1, L_MAX / 100, 1, 0.1);
     length2Slider = createSlider(0.1, L_MAX / 100, 1.5, 0.1);
     gMultiplierSlider  = createSlider(0, 10, 1, 0.1);
-    speedSlider = createSlider(0.1, 5.0, 1.0, 0.1);
+    speedSlider = createSlider(0.1, 10, 1, 0.1);
 
     styleUiSlider(mass1Slider);
     styleUiSlider(mass2Slider);
@@ -866,11 +870,16 @@ function draw() {
     // Нахождение следующего состояния системы
     if (!paused) {
         const timeScale = Number(speedSlider.value());
-        const subSteps = Math.ceil(timeScale);
-        const dtStep = DT * timeScale / subSteps;
+        const frameSec = Math.min(deltaTime / 1000, MAX_FRAME_TIME); // deltaTime в p5.js — миллисекунды между кадрами
+        simAccumulator += frameSec * timeScale;
 
-        for (let i = 0; i < subSteps; i++) {
-            rk4(dtStep);
+        let steps = 0;
+        while (simAccumulator >= DT && steps < MAX_STEPS_PER_FRAME) {
+            rk4(DT);               // фиксированный шаг физики
+            simAccumulator -= DT;
+            steps++;
         }
+
+        if (steps === MAX_STEPS_PER_FRAME) simAccumulator = 0; // если лаги совсем большие
     }
 }
