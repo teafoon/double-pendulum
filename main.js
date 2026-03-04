@@ -194,7 +194,7 @@ function injectSliderCss() {
     input[type=range].ui-slider::-webkit-slider-runnable-track{
         HEIGHT:4px;
         border-radius:999px;
-        background: linear-gradient(var(--ui-fill, #0060DF) 0 0) 0/var(--ui-pct, 0%) 100% no-repeat
+        background: linear-gradient(var(--ui-fill, ${ACCENT_COLOR}) 0 0) 0/var(--ui-pct, 0%) 100% no-repeat
                     var(--ui-track, #3a4553);
     }
     input[type=range].ui-slider::-webkit-slider-thumb{
@@ -202,7 +202,7 @@ function injectSliderCss() {
         WIDTH:14px;
         HEIGHT:14px;
         border-radius:50%;
-        background: var(--ui-thumb, #0060DF);
+        background: var(--ui-thumb, ${ACCENT_COLOR});
         border: 2px solid var(--ui-thumb-border, #1C2127);
         margin-top:-5px; /* центрируем кружок относительно полосы */
     }
@@ -216,13 +216,13 @@ function injectSliderCss() {
     input[type=range].ui-slider::-moz-range-progress{
         HEIGHT:4px;
         border-radius:999px;
-        background: var(--ui-fill, #0060DF);
+        background: var(--ui-fill, ${ACCENT_COLOR});
     }
     input[type=range].ui-slider::-moz-range-thumb{
         WIDTH:14px;
         HEIGHT:14px;
         border-radius:50%;
-        background: var(--ui-thumb, #0060DF);
+        background: var(--ui-thumb, ${ACCENT_COLOR});
         border: 2px solid var(--ui-thumb-border, #1C2127);
     }`;
 
@@ -303,7 +303,6 @@ function attachFloatingSliderValue(slider, tag, {
 }
 
 function layoutSidebar() {
-
     // Основные параметры панели настроек
     const PAD = 14;                 // Внутренний отступ панели от левого и верхнего края
     const TITLE_GAP = 50;           // Расстояние от заголовка секции до первого элемента секции
@@ -352,7 +351,7 @@ function layoutSidebar() {
     placeSlider(mass2Slider, mass2Label, mass2ValueTag, ' kg');
     placeSlider(length1Slider, length1Label, length1ValueTag, ' m');
     placeSlider(length2Slider, length2Label, length2ValueTag, ' m');
-    placeSlider(gMultiplierSlider, gMultiplierLabel, gMultiplierValueTag, ' gravity');
+    placeSlider(gMultiplierSlider, gMultiplierLabel, gMultiplierValueTag, ' g');
 
     y -= 19;
 
@@ -391,6 +390,38 @@ function layoutSidebar() {
     y += BTN_H + DIVIDER_GAP;
 
     placeDivider(divider3);
+
+    y += DIVIDER_GAP;
+
+    const labelToInputOffsetX = 80;
+    const rowSpacingY = 30;
+
+    settingsButton.position(x, y);
+
+    y += 10;
+
+    phi1Label.position(x, y);
+    phi1Input.position(x + labelToInputOffsetX, y);
+
+    y += rowSpacingY;
+
+    phi2Label.position(x, y);
+    phi2Input.position(x + labelToInputOffsetX, y);
+
+    y += rowSpacingY;
+
+    omega1Label.position(x, y);
+    omega1Input.position(x + labelToInputOffsetX, y);
+
+    y += rowSpacingY;
+
+    omega2Label.position(x, y);
+    omega2Input.position(x + labelToInputOffsetX, y);
+
+    y += rowSpacingY;
+
+    okButton.position(x, y);
+    cancelButton.position(x + labelToInputOffsetX, y);
 }
 
 function calculateCoordinates() { // Вычисление координат масс
@@ -726,61 +757,50 @@ function setup() { // Отрисовка интерфейса
     let settings_x = 14;
     let settings_y = 655; 
 
-    settingsButton = createButton('Change start parametrs');
+    settingsButton = createButton('Change start parameters');
     styleUiButtonTransparent(settingsButton);
     settingsButton.style('text-align', 'left');
     settingsButton.style('padding-left', '1px');
     settingsButton.size(BTN_W + 20, BTN_H + 20);
-    settingsButton.position(settings_x - 3, settings_y);
     settingsButton.mousePressed(settingsHandler);
 
     okButton = createButton('OK');
-    okButton.position(settings_x + 3, settings_y + 120);
     okButton.mousePressed(applySettings);
     okButton.hide();
 
     cancelButton = createButton('Cancel');
-    cancelButton.position(settings_x + 42, settings_y + 120);
     cancelButton.mousePressed(cancelSettings);
     cancelButton.hide();
 
     phi1Label = createDiv('phi1:');
-    phi1Label.position(settings_x, settings_y);
     phi1Label.style('color', 'white');
     phi1Label.hide();
 
     phi1Input = createInput(startPhi1.toFixed(2));
-    phi1Input.position(settings_x + 35, settings_y);
     phi1Input.size(60);
     phi1Input.hide();
 
     phi2Label = createDiv('phi2:');
-    phi2Label.position(settings_x, settings_y + 30);
     phi2Label.style('color', 'white');
     phi2Label.hide();
 
     phi2Input = createInput(startPhi2.toFixed(2));
-    phi2Input.position(settings_x + 35, settings_y + 30);
     phi2Input.size(60);
     phi2Input.hide();
 
     omega1Label = createDiv('omega1:');
-    omega1Label.position(settings_x, settings_y + 60);
     omega1Label.style('color', 'white');
     omega1Label.hide();
 
     omega1Input = createInput(startOmega1.toFixed(2));
-    omega1Input.position(settings_x + 35, settings_y + 60);
     omega1Input.size(60);
     omega1Input.hide();
 
     omega2Label = createDiv('omega2:');
-    omega2Label.position(settings_x, settings_y + 90);
     omega2Label.style('color', 'white');
     omega2Label.hide();
 
     omega2Input = createInput(startOmega2.toFixed(2));
-    omega2Input.position(settings_x + 35, settings_y + 90);
     omega2Input.size(60);
     omega2Input.hide();
 
