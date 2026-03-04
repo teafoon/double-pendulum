@@ -5,8 +5,9 @@ chaotic motion and energy dynamics.\
 The simulation is written in **JavaScript using p5.js** and runs
 entirely in the browser.
 
-🌐 **Live demo:**\
-https://teafoon.github.io/double-pendulum/
+**[Demo](https://teafoon.github.io/double-pendulum/)**
+
+![Double Pendulum Simulation](assets/screenshot.png)
 
 ------------------------------------------------------------------------
 
@@ -81,14 +82,13 @@ No build step or server is required.
 Симуляция написана на **JavaScript с использованием p5.js** и полностью
 работает в браузере.
 
-🌐 **Демо:**\
-https://teafoon.github.io/double-pendulum/
+**[Демо](https://teafoon.github.io/double-pendulum/)**
 
 ------------------------------------------------------------------------
 
 ## О проекте
 
-Двойной маятник --- классический пример **хаотической системы**.\
+Двойной маятник - классический пример **хаотической системы**.\
 Даже небольшие изменения начальных условий могут привести к совершенно
 разным траекториям движения.
 
